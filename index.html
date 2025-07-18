@@ -2,51 +2,27 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- ИЗМЕНЕНО: Мета-тег для правильного мобильного отображения -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Стас: Гнев Потопа</title>
     <style>
-        /* ИЗМЕНЕНО: Стили для адаптивности */
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Запрещаем прокрутку страницы */
-            background-color: #333;
-            color: white;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #333; color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-
         h1 {
-            text-shadow: 2px 2px 4px #000;
-            position: absolute;
-            top: 2vh;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
+            text-shadow: 2px 2px 4px #000; position: absolute;
+            top: 2vh; left: 50%; transform: translateX(-50%); z-index: 100;
         }
-        
         #game-container {
-            /* ИЗМЕНЕНО: Базовые размеры для расчетов, позиционирование для масштабирования */
-            width: 500px;
-            height: 700px;
-            border: 2px solid #ccc;
-            position: absolute; /* Важно для transform */
-            top: 50%;
-            left: 50%;
-            overflow: hidden;
-            background-color: #87CEEB;
-            transform-origin: center center; /* Масштабирование от центра */
+            width: 500px; height: 700px; border: 2px solid #ccc;
+            position: absolute; top: 50%; left: 50%;
+            overflow: hidden; background-color: #87CEEB;
+            transform-origin: center center;
         }
-        
         #mobile-controls {
-            display: none;
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
+            display: none; position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
             z-index: 25; user-select: none;
         }
         .mobile-btn {
@@ -58,14 +34,12 @@
         #left-btn { left: 30px; }
         #right-btn { right: 30px; }
         .mobile-btn:active { background-color: rgba(255, 255, 255, 0.45); }
-        
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         .screen-shake { animation: shake 0.5s linear; }
-        
         #parallax-bg {
             position: absolute; width: 100%; height: 1400px; top: 0; left: 0; z-index: 1;
             background-image:
@@ -99,9 +73,9 @@
             border-radius: 50%; filter: blur(2px);
         }
         #score-panel {
-            position: absolute; top: 10px; left: 10px;
-            font-size: 24px; color: white; z-index: 20; text-shadow: 2px 2px 4px black;
-            background-color: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px;
+            position: absolute; top: 10px; left: 10px; font-size: 24px; color: white;
+            z-index: 20; text-shadow: 2px 2px 4px black; background-color: rgba(0,0,0,0.2);
+            padding: 5px 10px; border-radius: 5px;
         }
         #score, #water-level-display { line-height: 1.2; }
         #water-level-display { font-size: 16px; color: #ffcccc; }
@@ -117,14 +91,9 @@
             padding: 10px 20px; font-size: 18px; cursor: pointer; border: none;
             background-color: #4CAF50; color: white; border-radius: 5px; margin-top: 20px;
         }
-        
         #controls-info {
-            position: absolute;
-            bottom: 2vh;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            text-align: center;
+            position: absolute; bottom: 2vh; left: 50%;
+            transform: translateX(-50%); z-index: 100; text-align: center;
         }
     </style>
 </head>
@@ -171,18 +140,17 @@
         let playerX, playerY, velocityY, isJumping, score, totalScrolledHeight, waterLevel, waterSpeed, waterAcceleration, backgroundY, highScore;
         let surgeCooldown, surgeActive;
         
-        // --- НОВАЯ ЛОГИКА ГИРОСКОПА ---
         let isGyroActive = false;
         let gyroTilt = 0;
         const GYRO_SENSITIVITY = 0.4;
         const GYRO_DEAD_ZONE = 2.5;
-        // --- КОНЕЦ ЛОГИКИ ГИРОСКОПА ---
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) { /* ... код звуков без изменений ... */ }
         
+        // --- ИСПРАВЛЕНО: Массив platforms объявлен здесь и больше нигде не переопределяется ---
         const keys = { ArrowLeft: false, ArrowRight: false };
-        let platforms = [], gameLoopInterval;
+        let platforms = []; 
+        let gameLoopInterval;
 
         function initGameVariables() {
             playerX = gameWidth / 2 - stasWidth / 2;
@@ -196,41 +164,70 @@
         const gravity = -0.7, jumpPower = 18, moveSpeed = 7;
         const bouncePower = 30;
 
-        function createPlatform(y) { /* ... код создания платформ без изменений ... */ }
-        function generateInitialPlatforms() { /* ... код генерации платформ без изменений ... */ }
+        // Эта функция теперь корректно добавляет платформу в ОСНОВНОЙ массив
+        function createPlatform(y) {
+            const platform = document.createElement('div');
+            platform.classList.add('platform');
+            const rand = Math.random();
+            if (rand < 0.15 && y > 300) { platform.classList.add('platform-breaking'); platform.dataset.type = 'breaking'; }
+            else if (rand < 0.25) { platform.classList.add('platform-bouncy'); platform.dataset.type = 'bouncy'; }
+            else { platform.classList.add('platform-normal'); platform.dataset.type = 'normal'; }
+            platform.style.bottom = y + 'px'; platform.style.left = Math.random() * (gameWidth - 100) + 'px';
+            gameContainer.appendChild(platform);
+            platforms.push(platform); // Добавляем в глобальный массив
+        }
+        
+        // Эта функция теперь корректно работает с ОСНОВНЫМ массивом
+        function generateInitialPlatforms() {
+            platforms.forEach(p => p.remove());
+            platforms = []; // Очищаем глобальный массив
+            const startPlatform = document.createElement('div');
+            startPlatform.classList.add('platform', 'platform-normal');
+            startPlatform.dataset.type = 'normal';
+            startPlatform.style.bottom = '50px';
+            startPlatform.style.left = (gameWidth / 2 - 50) + 'px';
+            gameContainer.appendChild(startPlatform);
+            platforms.push(startPlatform); // Добавляем в глобальный массив
+            for (let i = 150; i < gameHeight; i += 120) {
+                createPlatform(i);
+            }
+        }
 
         function updateGame() {
-            // --- ИЗМЕНЕНА ЛОГИКА ДВИЖЕНИЯ ---
             if (isGyroActive) {
-                // Управление гироскопом
-                if (gyroTilt > GYRO_DEAD_ZONE) {
-                    playerX += (gyroTilt - GYRO_DEAD_ZONE) * GYRO_SENSITIVITY;
-                } else if (gyroTilt < -GYRO_DEAD_ZONE) {
-                    playerX += (gyroTilt + GYRO_DEAD_ZONE) * GYRO_SENSITIVITY;
-                }
+                if (gyroTilt > GYRO_DEAD_ZONE) playerX += (gyroTilt - GYRO_DEAD_ZONE) * GYRO_SENSITIVITY;
+                else if (gyroTilt < -GYRO_DEAD_ZONE) playerX += (gyroTilt + GYRO_DEAD_ZONE) * GYRO_SENSITIVITY;
             } else {
-                // Управление с клавиатуры / кнопок
                 if (keys.ArrowLeft) playerX -= moveSpeed;
                 if (keys.ArrowRight) playerX += moveSpeed;
             }
-            
             if (playerX < 0) playerX = 0;
             if (playerX > gameWidth - stasWidth) playerX = gameWidth - stasWidth;
-            // --- КОНЕЦ ИЗМЕНЕНИЙ В ДВИЖЕНИИ ---
 
-            velocityY += gravity; playerY += velocityY;
+            velocityY += gravity;
+            playerY += velocityY;
             isJumping = true;
             
-            // ... остальная логика updateGame (платформы, скроллинг, вода, счет) без изменений ...
-             platforms.forEach(platform => {
+            platforms.forEach(platform => {
                 const platBottom = parseInt(platform.style.bottom), platLeft = parseInt(platform.style.left);
                 if (velocityY < 0 && playerY < platBottom + 20 && playerY + stasHeight > platBottom && playerX + stasWidth > platLeft && playerX < platLeft + 100) {
+                    if(platform.dataset.type === 'broken') return;
+                    
                     switch (platform.dataset.type) {
                         case 'bouncy': velocityY = bouncePower; playSound('bounce'); break;
-                        case 'breaking': velocityY = jumpPower; platform.dataset.type = 'broken'; setTimeout(() => { platform.style.opacity = '0'; platform.style.transform = 'translateY(20px)'; setTimeout(() => platform.remove(), 300); }, 100); break;
+                        case 'breaking': 
+                            velocityY = jumpPower; 
+                            platform.dataset.type = 'broken';
+                            setTimeout(() => { 
+                                platform.style.opacity = '0'; 
+                                platform.style.transform = 'translateY(20px)'; 
+                                setTimeout(() => platform.remove(), 300);
+                            }, 100); 
+                            break;
                         default: velocityY = jumpPower; break;
                     }
-                    playerY = platBottom + 20; isJumping = false;
+                    playerY = platBottom + 20;
+                    isJumping = false;
                 }
             });
             platforms = platforms.filter(p => p.parentElement);
@@ -245,8 +242,10 @@
                    else platform.style.bottom = newBottom + 'px';
                 });
                 platforms = platforms.filter(p => p.parentElement);
-                const lastPlatformY = Math.max(0, ...platforms.map(p => parseInt(p.style.bottom)));
-                if (lastPlatformY < gameHeight - 100) createPlatform(lastPlatformY + 100 + Math.random() * 50);
+                const lastPlatformY = platforms.length > 0 ? Math.max(...platforms.map(p => parseInt(p.style.bottom))) : 0;
+                if (lastPlatformY < gameHeight - 100) {
+                    createPlatform(lastPlatformY + 100 + Math.random() * 50);
+                }
             }
 
             surgeCooldown--;
@@ -273,66 +272,56 @@
             if (playerY < waterLevel || playerY < -stasHeight) gameOver();
         }
         
-        function gameOver() { /* ... код без изменений ... */ }
+        function gameOver() {
+            clearInterval(gameLoopInterval); playSound('gameOver');
+            const finalScoreMeters = (score / PIXELS_PER_METER).toFixed(1);
+            finalScoreDisplay.textContent = `Ваш результат: ${finalScoreMeters}м`;
+            if (score > highScore) { highScore = score; localStorage.setItem('stasHighScore', highScore); highScoreDisplay.textContent = `НОВЫЙ РЕКОРД!`; }
+            else { highScoreDisplay.textContent = `Рекорд: ${(highScore / PIXELS_PER_METER).toFixed(1)}м`; }
+            gameOverScreen.style.display = 'flex';
+        }
+
         function handleKeyDown(e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') keys[e.code] = true; if (e.code === 'Space' && !isJumping) { velocityY = jumpPower; playSound('jump'); } }
         function handleKeyUp(e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') keys[e.code] = false; }
         
-        // --- НОВАЯ ЛОГИКА АДАПТАЦИИ ЭКРАНА ---
         function resizeGame() {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const scaleX = viewportWidth / gameWidth;
             const scaleY = viewportHeight / gameHeight;
-            
-            // Выбираем наименьший масштаб, чтобы игра полностью поместилась
-            const scale = Math.min(scaleX, scaleY) * 0.95; // 0.95 для небольшого отступа
-            
-            // Применяем масштабирование и центрирование
+            const scale = Math.min(scaleX, scaleY) * 0.95;
             gameContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
-        // --- КОНЕЦ ЛОГИКИ АДАПТАЦИИ ЭКРАНА ---
-
-        // --- НОВАЯ ЛОГИКА НАСТРОЙКИ УПРАВЛЕНИЯ ---
+        
         function setupControls() {
             const isTouchDevice = 'ontouchstart' in window;
             if (!isTouchDevice) {
                 desktopInstructions.style.display = 'block';
                 mobileInstructions.style.display = 'none';
-                return; // Выход, если не сенсорное устройство
+                return;
             }
-
             desktopInstructions.style.display = 'none';
             mobileInstructions.style.display = 'block';
-            
-            // Показываем кнопки по умолчанию
             mobileControls.style.display = 'block';
-
-            // Попытка активировать гироскоп
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ требует явного разрешения пользователя
-                // Мы можем запросить его при первом тапе или нажатии кнопки
-                // Давайте сделаем это при нажатии кнопки "Рестарт" в функции startGame
+                // For iOS 13+
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-
-            // Обработчики для экранных кнопок
             const handleMove = (e, isStarting) => {
                 e.preventDefault();
-                if (isGyroActive) return; // Не реагировать, если гироскоп активен
+                if (isGyroActive) return;
                 const targetId = e.currentTarget.id;
                 if (targetId === 'left-btn') keys.ArrowLeft = isStarting;
                 if (targetId === 'right-btn') keys.ArrowRight = isStarting;
             };
-
             leftBtn.addEventListener('touchstart', e => handleMove(e, true), { passive: false });
             leftBtn.addEventListener('touchend', e => handleMove(e, false), { passive: false });
             rightBtn.addEventListener('touchstart', e => handleMove(e, true), { passive: false });
             rightBtn.addEventListener('touchend', e => handleMove(e, false), { passive: false });
             
-            // Прыжок по тапу на игровое поле
             gameContainer.addEventListener('touchstart', (e) => {
-                if (e.target.classList.contains('mobile-btn') || e.target.id === 'restart-button') return;
+                if (e.target.classList.contains('mobile-btn') || e.target.closest('#game-over')) return;
                 e.preventDefault();
                 if (!isJumping) {
                     velocityY = jumpPower;
@@ -342,30 +331,21 @@
         }
         
         function handleOrientation(event) {
-            // event.gamma - наклон влево/вправо (-90 до 90)
             if (event.gamma !== null) {
-                if (!isGyroActive) { // Активируем при первом получении данных
+                if (!isGyroActive) {
                     isGyroActive = true;
-                    mobileControls.style.display = 'none'; // Скрываем кнопки
+                    mobileControls.style.display = 'none';
                 }
                 gyroTilt = event.gamma;
             }
         }
-        // --- КОНЕЦ ЛОГИКИ НАСТРОЙКИ УПРАВЛЕНИЯ ---
-
 
         function startGame() {
-            // Запрос разрешения для гироскопа на iOS
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        }
-                    })
+                    .then(permissionState => { if (permissionState === 'granted') window.addEventListener('deviceorientation', handleOrientation); })
                     .catch(console.error);
             }
-
             initGameVariables();
             generateInitialPlatforms();
             gameOverScreen.style.display = 'none';
@@ -373,23 +353,19 @@
             if (gameLoopInterval) clearInterval(gameLoopInterval);
             gameLoopInterval = setInterval(updateGame, 20);
         }
+        
+        function playSound(type) { if (!audioCtx) return; const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); oscillator.connect(gainNode); gainNode.connect(audioCtx.destination); gainNode.gain.setValueAtTime(0, audioCtx.currentTime); if(type === 'jump') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(300, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1); } else if (type === 'bounce') { oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(400, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); } else if (type === 'gameOver') { oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(200, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5); } else if (type === 'surge') { oscillator.type = 'square'; oscillator.frequency.setValueAtTime(100, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1); } oscillator.start(audioCtx.currentTime); oscillator.stop(audioCtx.currentTime + 1); }
 
-        // Инициализация
+        // Initialization
         document.addEventListener('keydown', handleKeyDown);
         document.addEventListener('keyup', handleKeyUp);
         restartButton.addEventListener('click', startGame);
-        
-        window.addEventListener('resize', resizeGame); // Слушаем изменение размера окна
+        window.addEventListener('resize', resizeGame);
 
-        resizeGame(); // Вызываем один раз при загрузке
-        setupControls(); // Настраиваем управление
+        resizeGame();
+        setupControls();
         startGame();
     });
-    // Перезаливаем сюда недостающие функции, если они были удалены при копировании
-    function playSound(type) { if (!audioCtx) return; const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); oscillator.connect(gainNode); gainNode.connect(audioCtx.destination); gainNode.gain.setValueAtTime(0, audioCtx.currentTime); if(type === 'jump') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(300, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1); } else if (type === 'bounce') { oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(400, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); } else if (type === 'gameOver') { oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(200, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5); } else if (type === 'surge') { oscillator.type = 'square'; oscillator.frequency.setValueAtTime(100, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1); } oscillator.start(audioCtx.currentTime); oscillator.stop(audioCtx.currentTime + 1); }
-    function createPlatform(y) { const gameContainer = document.getElementById('game-container'); let platforms = Array.from(document.querySelectorAll('.platform')); const platform = document.createElement('div'); platform.classList.add('platform'); const rand = Math.random(); if (rand < 0.15 && y > 300) { platform.classList.add('platform-breaking'); platform.dataset.type = 'breaking'; } else if (rand < 0.25) { platform.classList.add('platform-bouncy'); platform.dataset.type = 'bouncy'; } else { platform.classList.add('platform-normal'); platform.dataset.type = 'normal'; } platform.style.bottom = y + 'px'; platform.style.left = Math.random() * (500 - 100) + 'px'; gameContainer.appendChild(platform); platforms.push(platform); }
-    function generateInitialPlatforms() { const gameContainer = document.getElementById('game-container'); let platforms = Array.from(document.querySelectorAll('.platform')); platforms.forEach(p => p.remove()); platforms = []; const startPlatform = document.createElement('div'); startPlatform.classList.add('platform', 'platform-normal'); startPlatform.dataset.type = 'normal'; startPlatform.style.bottom = '50px'; startPlatform.style.left = (500 / 2 - 50) + 'px'; gameContainer.appendChild(startPlatform); platforms.push(startPlatform); for (let i = 150; i < 700; i += 120) createPlatform(i); }
-    function gameOver() { clearInterval(gameLoopInterval); playSound('gameOver'); const score = Math.max(0, ...Array.from(document.querySelectorAll('.platform')).map(p=>parseInt(p.style.bottom))); const finalScoreMeters = (score / 100).toFixed(1); document.getElementById('final-score').textContent = `Ваш результат: ${finalScoreMeters}м`; let highScore = localStorage.getItem('stasHighScore') || 0; if (score > highScore) { highScore = score; localStorage.setItem('stasHighScore', highScore); document.getElementById('high-score').textContent = `НОВЫЙ РЕКОРД!`; } else { document.getElementById('high-score').textContent = `Рекорд: ${(highScore / 100).toFixed(1)}м`; } document.getElementById('game-over').style.display = 'flex'; }
     </script>
 </body>
 </html>
