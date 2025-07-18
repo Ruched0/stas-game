@@ -2,12 +2,50 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Стас: Гнев Потопа</title>
     <style>
         body {
             margin: 0; display: flex; justify-content: center; align-items: center;
             height: 100vh; background-color: #333;
+
+            /* НОВОЕ: Мобильное управление */
+            #mobile-controls {
+                display: none; /* Скрыто по умолчанию, включается через JS */
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 120px; /* Область для кнопок */
+                z-index: 25;
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+            }
+            .mobile-btn {
+                position: absolute;
+                bottom: 20px;
+                width: 80px;
+                height: 80px;
+                background-color: rgba(255, 255, 255, 0.25);
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 36px;
+                color: rgba(255, 255, 255, 0.9);
+                text-shadow: 1px 1px 3px black;
+                cursor: pointer;
+            }
+            #left-btn { left: 30px; }
+            #right-btn { right: 30px; }
+            .mobile-btn:active {
+                background-color: rgba(255, 255, 255, 0.45);
+            }
+            /* --- Конец мобильного управления --- */
+
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             flex-direction: column; color: white;
         }
@@ -27,7 +65,7 @@
         }
         #parallax-bg {
             position: absolute; width: 100%; height: 1400px; top: 0; left: 0; z-index: 1;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 30%, white 30px, transparent 31px),
                 radial-gradient(circle at 75% 20%, white 50px, transparent 51px),
                 radial-gradient(circle at 40% 80%, white 40px, transparent 41px),
@@ -92,6 +130,10 @@
 <body>
     <h1>Стас: Гнев Потопа</h1>
     <div id="game-container">
+        <div id="mobile-controls">
+            <div id="left-btn" class="mobile-btn">◀</div>
+            <div id="right-btn" class="mobile-btn">▶</div>
+        </div>
         <div id="parallax-bg"></div><div id="stas"></div><div id="water"></div>
         <div id="score-panel">
             <div id="score">Высота: 0.0м</div>
@@ -103,7 +145,10 @@
             <button id="restart-button">Попробовать снова</button>
         </div>
     </div>
-    <p><b>Управление:</b> ← → для движения, <b>Пробел</b> для прыжка.</p>
+    <div id="desktop-controls">
+      <p><b>Управление:</b> ← → для движения, <b>Пробел</b> для прыжка.</p>
+    </div>
+    <p id="mobile-instructions" style="display: none;"><b>Управление:</b> кнопки ◀ ▶ для движения, тап по экрану для прыжка.</p>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -113,13 +158,18 @@
         const scoreDisplay = document.getElementById('score'), waterLevelDisplay = document.getElementById('water-level-display');
         const gameOverScreen = document.getElementById('game-over'), finalScoreDisplay = document.getElementById('final-score'), highScoreDisplay = document.getElementById('high-score');
         const restartButton = document.getElementById('restart-button');
+        // НОВОЕ: Элементы управления
+        const mobileControls = document.getElementById('mobile-controls');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const desktopControls = document.getElementById('desktop-controls');
+        const mobileInstructions = document.getElementById('mobile-instructions');
 
         const gameWidth = 500, gameHeight = 700;
         const stasWidth = 40, stasHeight = 60;
         const PIXELS_PER_METER = 100;
 
         let playerX, playerY, velocityY, isJumping, score, totalScrolledHeight, waterLevel, waterSpeed, waterAcceleration, backgroundY, highScore;
-        // НОВОЕ: Переменные для управления волнами потопа
         let surgeCooldown, surgeActive;
         
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -130,10 +180,9 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            if(type === 'jump') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(300, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1); } 
-            else if (type === 'bounce') { oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(400, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); } 
+            if(type === 'jump') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(300, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1); }
+            else if (type === 'bounce') { oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(400, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); }
             else if (type === 'gameOver') { oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(200, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5); }
-            // НОВОЕ: Звук для волны
             else if (type === 'surge') { oscillator.type = 'square'; oscillator.frequency.setValueAtTime(100, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.02); oscillator.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 1); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1); }
             oscillator.start(audioCtx.currentTime); oscillator.stop(audioCtx.currentTime + 1);
         }
@@ -146,23 +195,21 @@
             playerY = 50; velocityY = 0; isJumping = false; score = 0;
             totalScrolledHeight = 0; waterLevel = 0; backgroundY = 0;
             highScore = localStorage.getItem('stasHighScore') || 0;
-            // ИЗМЕНЕНО: Более агрессивные параметры воды
-            waterSpeed = 0.4; 
+            waterSpeed = 0.4;
             waterAcceleration = 0.0004;
-            // НОВОЕ: Инициализация таймеров волн (в кадрах, ~50fps)
-            surgeCooldown = 500; // Первая волна через 10 секунд
+            surgeCooldown = 500;
             surgeActive = 0;
         }
 
         const gravity = -0.7, jumpPower = 18, moveSpeed = 7;
-        const bouncePower = 30; 
+        const bouncePower = 30;
 
         function createPlatform(y) {
             const platform = document.createElement('div');
             platform.classList.add('platform');
             const rand = Math.random();
-            if (rand < 0.15 && y > 300) { platform.classList.add('platform-breaking'); platform.dataset.type = 'breaking'; } 
-            else if (rand < 0.25) { platform.classList.add('platform-bouncy'); platform.dataset.type = 'bouncy'; } 
+            if (rand < 0.15 && y > 300) { platform.classList.add('platform-breaking'); platform.dataset.type = 'breaking'; }
+            else if (rand < 0.25) { platform.classList.add('platform-bouncy'); platform.dataset.type = 'bouncy'; }
             else { platform.classList.add('platform-normal'); platform.dataset.type = 'normal'; }
             platform.style.bottom = y + 'px'; platform.style.left = Math.random() * (gameWidth - 100) + 'px';
             gameContainer.appendChild(platform); platforms.push(platform);
@@ -197,11 +244,11 @@
 
             if (playerY > gameHeight / 2) {
                 const shift = playerY - gameHeight / 2;
-                totalScrolledHeight += shift; 
+                totalScrolledHeight += shift;
                 playerY -= shift; waterLevel -= shift; backgroundY -= shift * 0.5;
                 platforms.forEach(platform => {
                    let newBottom = parseInt(platform.style.bottom) - shift;
-                   if (newBottom < -20) platform.remove(); 
+                   if (newBottom < -20) platform.remove();
                    else platform.style.bottom = newBottom + 'px';
                 });
                 platforms = platforms.filter(p => p.parentElement);
@@ -209,23 +256,20 @@
                 if (lastPlatformY < gameHeight - 100) createPlatform(lastPlatformY + 100 + Math.random() * 50);
             }
 
-            // --- НОВАЯ ЛОГИКА ВОДЫ ---
             surgeCooldown--;
             if (surgeCooldown <= 0) {
-                surgeActive = 50; // Волна активна 1 секунду (50 кадров)
+                surgeActive = 50;
                 playSound('surge');
                 gameContainer.classList.add('screen-shake');
-                // Сброс таймера на случайный интервал от 8 до 16 секунд
-                surgeCooldown = 400 + Math.random() * 400; 
+                surgeCooldown = 400 + Math.random() * 400;
             }
             if (surgeActive > 0) {
                 surgeActive--;
-                waterSpeed += 0.2; // Мощный прирост скорости во время волны!
+                waterSpeed += 0.2;
                 if (surgeActive === 0) {
                     gameContainer.classList.remove('screen-shake');
                 }
             }
-            // --------------------------
 
             waterLevel += waterSpeed; waterSpeed += waterAcceleration;
             water.style.height = `${waterLevel}px`;
@@ -245,13 +289,44 @@
             clearInterval(gameLoopInterval); playSound('gameOver');
             const finalScoreMeters = (score / PIXELS_PER_METER).toFixed(1);
             finalScoreDisplay.textContent = `Ваш результат: ${finalScoreMeters}м`;
-            if (score > highScore) { highScore = score; localStorage.setItem('stasHighScore', highScore); highScoreDisplay.textContent = `НОВЫЙ РЕКОРД!`; } 
+            if (score > highScore) { highScore = score; localStorage.setItem('stasHighScore', highScore); highScoreDisplay.textContent = `НОВЫЙ РЕКОРД!`; }
             else { highScoreDisplay.textContent = `Рекорд: ${(highScore / PIXELS_PER_METER).toFixed(1)}м`; }
             gameOverScreen.style.display = 'flex';
         }
 
         function handleKeyDown(e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') keys[e.code] = true; if (e.code === 'Space' && !isJumping) { velocityY = jumpPower; playSound('jump'); } }
         function handleKeyUp(e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') keys[e.code] = false; }
+        
+        // НОВОЕ: Функция настройки мобильного управления
+        function setupMobileControls() {
+            const isTouchDevice = 'ontouchstart' in window;
+            if (!isTouchDevice) return;
+            
+            mobileControls.style.display = 'block';
+            desktopControls.style.display = 'none';
+            mobileInstructions.style.display = 'block';
+
+            const handleMove = (e, isStarting) => {
+                e.preventDefault();
+                const targetId = e.currentTarget.id;
+                if (targetId === 'left-btn') keys.ArrowLeft = isStarting;
+                if (targetId === 'right-btn') keys.ArrowRight = isStarting;
+            };
+
+            leftBtn.addEventListener('touchstart', e => handleMove(e, true), { passive: false });
+            leftBtn.addEventListener('touchend', e => handleMove(e, false), { passive: false });
+            rightBtn.addEventListener('touchstart', e => handleMove(e, true), { passive: false });
+            rightBtn.addEventListener('touchend', e => handleMove(e, false), { passive: false });
+
+            gameContainer.addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('mobile-btn')) return;
+                e.preventDefault();
+                if (!isJumping) {
+                    velocityY = jumpPower;
+                    playSound('jump');
+                }
+            }, { passive: false });
+        }
 
         function startGame() {
             initGameVariables(); generateInitialPlatforms();
@@ -261,9 +336,11 @@
             gameLoopInterval = setInterval(updateGame, 20);
         }
 
-        document.addEventListener('keydown', handleKeyDown); document.addEventListener('keyup', handleKeyUp);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
         restartButton.addEventListener('click', startGame);
 
+        setupMobileControls(); // Вызываем настройку мобильного управления
         startGame();
     });
     </script>
